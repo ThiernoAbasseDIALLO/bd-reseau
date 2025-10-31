@@ -1,0 +1,11 @@
+utilisateur_id,nom,prenom,email,telephone
+CL0001,Martin,Paul,paul.martin@gmail.com,0612345678
+CL0002,Durand,Alice,Alice.durand@gmail.com,0623456789
+CL0003,Dupont,Jean,jean.dupont@gmail.com,0634567890
+CL0004,Petit,Marie,Marie.petit@gmail.com,0645678901
+CL0005,Lemoine,Lucas,lucas.lemoine@gmail.com,0656789012
+LV0001,Bernard,Sophie,Sophie.bernard@gmail.com,0667890123
+LV0002,Nguyen,Thierry,thierry.nguyen@gmail.com,0678901234
+LV0003,Sow,Mamadou,smamdou@gmail.com,0667890123
+LV0004,Bernard,Lucas,lbernard@gmail.com,0678901234
+LV0005,Leroy,Julien,julien.leroy@gmail.com,0645678901

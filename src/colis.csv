@@ -1,0 +1,6 @@
+colis_id,numero_suivi,poids,taille,etat,client_id
+CO0001,COL001,2.5,Moyen,préparé,CL0001
+CO0002,COL002,1.2,Petit,en cours,CL0002
+CO0003,COL003,3.0,Grand,livré,CL0003
+CO0004,COL004,0.8,Petit,retard,CL0004
+CO0005,COL005,5.0,Grand,en cours,CL0005
