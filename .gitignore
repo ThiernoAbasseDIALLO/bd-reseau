@@ -36,3 +36,6 @@ bin/
 
 # On ne suit pas aussi ce dossier
 web/secret
+
+# Fichiers de configuration sensibles
+src/config.properties
