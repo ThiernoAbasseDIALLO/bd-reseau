@@ -5,12 +5,15 @@ import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Serveur {
     private String ip;
     private int port;
+    private Colis colis;
+    private DBConnect db;
 
     private ArrayList<String[]> colisData = new ArrayList<>();
     private ArrayList<String[]> livreursData = new ArrayList<>();
@@ -39,8 +42,9 @@ public class Serveur {
         loadCSV("src/livreurs.csv", livreursData);
         loadCSV("src/positions.csv", positionsData);
         DBConfig config = new DBConfig("config.properties");
-        DBConnect db = new DBConnect(config);
+        db = new DBConnect(config);
         Connection conn = db.connect();
+        colis = new Colis(conn);
 
         try (ServerSocket serverSocket = new ServerSocket(port, 0, InetAddress.getByName(ip))) {
             System.out.println("Serveur TCP démarré sur " + ip + ":" + port);
@@ -54,6 +58,8 @@ public class Serveur {
 
         } catch (IOException e) {
             System.err.println("Erreur lors du démarrage du serveur : " + e.getMessage());
+        }finally {
+            db.closeConnection();
         }
     }
 
@@ -151,6 +157,8 @@ public class Serveur {
             System.out.println("Client inactif trop longtemps, déconnexion automatique." + e.getMessage());
         } catch (IOException e) {
             System.err.println("Erreur client : " + e.getMessage());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         } finally {
             terminaisonConnection(clientSocket);
         }
@@ -159,13 +167,6 @@ public class Serveur {
     private boolean isValidLivreur(String livreurId) {
         for (String[] l : livreursData) {
             if (l.length > 0 && l[0].equalsIgnoreCase(livreurId)) return true;
-        }
-        return false;
-    }
-
-    private boolean isValidColis(String colisId) {
-        for (String[] c : colisData) {
-            if (c.length > 0 && c[0].equalsIgnoreCase(colisId)) return true;
         }
         return false;
     }
@@ -197,14 +198,14 @@ public class Serveur {
         return "Position mise à jour pour le colis " + colisId + " → (" + lat + ", " + lon + ")";
     }
 
-    private String processState(String line, String[] parts) {
+    private String processState(String line, String[] parts) throws SQLException {
         if (parts.length < 3)
             return "Commande STATE incorrecte. Usage : STATE <colisId> <état>";
 
         String colisId = parts[1];
         String etat = line.substring(line.indexOf(parts[2]));
 
-        if (!isValidColis(colisId))
+        if (!colis.isValidColis(colisId))
             return "Colis inconnu : " + colisId;
 
         for (String[] c : colisData) {
@@ -217,12 +218,12 @@ public class Serveur {
         return "État du colis " + colisId + " mis à jour : " + etat;
     }
 
-    private String processTake(String[] parts) {
+    private String processTake(String[] parts) throws SQLException {
         if (parts.length < 2)
             return "Commande TAKE incorrecte. Usage : TAKE <colisId>";
 
         String colisId = parts[1];
-        if (!isValidColis(colisId))
+        if (!colis.isValidColis(colisId))
             return "Colis inconnu : " + colisId;
 
         for (String[] c : colisData) {
@@ -240,26 +241,13 @@ public class Serveur {
             return "Commande GET incorrecte. Usage : GET <colisId>";
 
         String colisId = parts[1];
-        String etat = "inconnu";
-        boolean pris = false;
 
-        for (String[] c : colisData) {
-            if (c[0].equalsIgnoreCase(colisId)) {
-                etat = (c.length > 4 && c[4] != null && !c[4].isEmpty()) ? c[4] : "inconnu";
-                pris = (c.length > 5 && "pris en charge".equalsIgnoreCase(c[5]));
-                break;
-            }
+        try{
+            return colis.getColis(colisId);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return "Erreur lors de la récupération du colis " + colisId;
         }
-
-        String pos = "non renseignée";
-        for (String[] p : positionsData) {
-            if (p[4].equalsIgnoreCase(colisId)) {
-                pos = p[1] + "," + p[2];
-                break;
-            }
-        }
-
-        return "Colis " + colisId + " → état=" + etat + ", position=" + pos + ", pris=" + pris;
     }
 
     private String processNotif(String line) {
