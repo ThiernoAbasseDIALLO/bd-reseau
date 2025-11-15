@@ -15,6 +15,7 @@ public class Serveur {
     private Colis colis;
     private DBConnect db;
     private Livreur lv;
+    private Position position;
 
     private ArrayList<String[]> colisData = new ArrayList<>();
     private ArrayList<String[]> livreursData = new ArrayList<>();
@@ -166,30 +167,32 @@ public class Serveur {
         }
     }
 
-    private String processPos(String[] parts) {
+    private String processPos(String[] parts) throws SQLException {
         if (parts.length < 4)
             return "Commande POS incorrecte. Usage : POS <colisId> <lat> <lon>";
 
         String colisId = parts[1];
-        String lat = parts[2];
-        String lon = parts[3];
+        double lat;
+        double lon;
 
-        // Mettre à jour la liste positionsData
-        boolean found = false;
-        for (String[] p : positionsData) {
-            if (p[4].equals(colisId)) {
-                p[1] = lat;
-                p[2] = lon;
-                p[3] = java.time.LocalDateTime.now().toString();
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            positionsData.add(new String[]{"PO" + (positionsData.size() + 1), lat, lon, java.time.LocalDateTime.now().toString(), colisId});
+        try {
+            lat = Double.parseDouble(parts[2]);
+            lon = Double.parseDouble(parts[3]);
+        } catch (NumberFormatException e) {
+            return "Latitude ou longitude invalide.";
         }
 
-        return "Position mise à jour pour le colis " + colisId + " → (" + lat + ", " + lon + ")";
+        if (!colis.isValidColis(colisId)) {
+            return "Colis inconnu pour " + colisId;
+        }
+
+        boolean inserted = position.insertColisPosition(colisId, lat, lon);
+        if (inserted) {
+            return "Nouvelle position enregistrée pour " + colisId +
+                    " → (" + lat + ", " + lon + ")";
+        } else {
+            return "Échec lors de l'insertion de la position pour " + colisId;
+        }
     }
 
     private String processState(String line, String[] parts) throws SQLException {
@@ -230,18 +233,12 @@ public class Serveur {
         return "Colis " + colisId + " pris en charge.";
     }
 
-    private String processGet(String[] parts) {
+    private String processGet(String[] parts) throws SQLException {
         if (parts.length < 2)
             return "Commande GET incorrecte. Usage : GET <colisId>";
 
         String colisId = parts[1];
-
-        try{
-            return colis.getColis(colisId);
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return "Erreur lors de la récupération du colis " + colisId;
-        }
+        return colis.getColis(colisId);
     }
 
     private String processNotif(String line) {
