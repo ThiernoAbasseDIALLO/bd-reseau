@@ -64,4 +64,45 @@ public class Colis {
             return rowsAffected == 1;
         }
     }
+
+    public boolean takeColis(String colisId, String livreurId) throws SQLException {
+        if (conn == null) {
+            throw new SQLException("Tentative de requete en étant déconnecté de la base de donnée");
+        }
+
+        boolean updated = updateEtatColis(colisId, "pris en charge");
+        if (!updated) {
+            return false;
+        }
+
+        String insertLivraison = "INSERT INTO livraison (colis_id, livreur_id, etat) VALUES (?, ?, 'prise en charge')";
+        try (PreparedStatement stmt = conn.prepareStatement(insertLivraison)) {
+            stmt.setString(1, colisId);
+            stmt.setString(2, livreurId);
+            stmt.executeUpdate();
+        }
+
+        return true;
+    }
+
+    public boolean insertNotification(String colisId, String typeNotification, String message) throws SQLException {
+        if (conn == null) {
+            throw new SQLException("Tentative de requête sans connexion à la base de données");
+        }
+
+        String query = "INSERT INTO notification (notification_id, type_notification, message, colis_id) "
+                + "VALUES (?, ?, ?, ?)";
+
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            String notificationId = "NO" + System.currentTimeMillis();
+
+            stmt.setString(1, notificationId);
+            stmt.setString(2, typeNotification);
+            stmt.setString(3, message);
+            stmt.setString(4, colisId);
+
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected == 1;
+        }
+    }
 }

@@ -7,7 +7,6 @@ import java.net.SocketTimeoutException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.HashMap;
 
 public class Serveur {
     private String ip;
@@ -18,8 +17,6 @@ public class Serveur {
     private Position position;
 
     private ArrayList<String[]> colisData = new ArrayList<>();
-    private ArrayList<String[]> livreursData = new ArrayList<>();
-    private ArrayList<String[]> positionsData = new ArrayList<>();
 
     public Serveur(String ip, int port) {
         this.ip = ip;
@@ -41,8 +38,6 @@ public class Serveur {
 
     public void startServer() {
         loadCSV("src/colis.csv", colisData);
-        loadCSV("src/livreurs.csv", livreursData);
-        loadCSV("src/positions.csv", positionsData);
         DBConfig config = new DBConfig("config.properties");
         db = new DBConnect(config);
         Connection conn = db.connect();
@@ -141,12 +136,8 @@ public class Serveur {
                         response = processGet(parts);
                         break;
 
-                    case "NOTIF":
-                        response = processNotif(line);
-                        break;
-
                     case "QUIT":
-                        response = "Déconnexion du serveur. À bientôt " + livreur + " !";
+                        response = "Déconnexion du serveur. À bientôt " + lv.getNameLivreur() + " !";
                         printToClient(response, out);
                         return;
 
@@ -209,6 +200,8 @@ public class Serveur {
         update = colis.updateEtatColis(colisId, etat);
 
         if (update) {
+            String message = "État du colis mis à jour : " + etat;
+            colis.insertNotification(colisId, "STATE", message);
             return "État du colis " + colisId + " mis à jour : " + etat;
         }
 
@@ -216,21 +209,27 @@ public class Serveur {
     }
 
     private String processTake(String[] parts) throws SQLException {
-        if (parts.length < 2)
-            return "Commande TAKE incorrecte. Usage : TAKE <colisId>";
+        if (parts.length < 3)
+            return "Commande TAKE incorrecte. Usage : TAKE <colisId> <livreurId>";
 
         String colisId = parts[1];
+        String livreurId = parts[2];
+
         if (!colis.isValidColis(colisId))
             return "Colis inconnu : " + colisId;
 
-        for (String[] c : colisData) {
-            if (c[0].equalsIgnoreCase(colisId)) {
-                c[5] = "pris en charge";
-                break;
-            }
-        }
+        if (!lv.isValidLivreur(livreurId))
+            return "Livreur inconnu : " + livreurId;
 
-        return "Colis " + colisId + " pris en charge.";
+        boolean success = colis.takeColis(colisId, livreurId);
+        if (success) {
+            String nomLivreur = lv.getNameLivreur(livreurId);
+            String message = "Colis pris en charge par le livreur " + nomLivreur;
+            colis.insertNotification(colisId, "Depart", message);
+            return "Colis " + colisId + " pris en charge par le livreur " + nomLivreur + ".";
+        } else {
+            return "Échec lors de la prise en charge du colis " + colisId;
+        }
     }
 
     private String processGet(String[] parts) throws SQLException {
@@ -239,10 +238,5 @@ public class Serveur {
 
         String colisId = parts[1];
         return colis.getColis(colisId);
-    }
-
-    private String processNotif(String line) {
-        String notif = line.substring(line.indexOf(" ") + 1);
-        return "Notification reçue : " + notif;
     }
 }
