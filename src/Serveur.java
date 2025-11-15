@@ -137,7 +137,7 @@ public class Serveur {
                         break;
 
                     case "QUIT":
-                        response = "Déconnexion du serveur. À bientôt " + lv.getNameLivreur() + " !";
+                        response = "Déconnexion du serveur. À bientôt " + lv.getNameLivreur(livreur) + " !";
                         printToClient(response, out);
                         return;
 
