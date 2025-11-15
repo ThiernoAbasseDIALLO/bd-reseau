@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.net.InetAddress;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.HashMap;
 
@@ -14,9 +15,6 @@ public class Serveur {
     private ArrayList<String[]> colisData = new ArrayList<>();
     private ArrayList<String[]> livreursData = new ArrayList<>();
     private ArrayList<String[]> positionsData = new ArrayList<>();
-//    private static HashMap<String, String> colisEtat = new HashMap<>();
-//    private static HashMap<String, Boolean> colisPris = new HashMap<>();
-//    private static final HashMap<String, String> colisPosition = new HashMap<>();
 
     public Serveur(String ip, int port) {
         this.ip = ip;
@@ -40,6 +38,9 @@ public class Serveur {
         loadCSV("src/colis.csv", colisData);
         loadCSV("src/livreurs.csv", livreursData);
         loadCSV("src/positions.csv", positionsData);
+        DBConfig config = new DBConfig("config.properties");
+        DBConnect db = new DBConnect(config);
+        Connection conn = db.connect();
 
         try (ServerSocket serverSocket = new ServerSocket(port, 0, InetAddress.getByName(ip))) {
             System.out.println("Serveur TCP démarré sur " + ip + ":" + port);
@@ -265,53 +266,4 @@ public class Serveur {
         String notif = line.substring(line.indexOf(" ") + 1);
         return "Notification reçue : " + notif;
     }
-
-//    private static String processCommand(String line) {
-//        if (line == null || line.trim().isEmpty()) return "Commande vide.";
-//
-//        String[] parts = line.trim().split(" ");
-//        String command = parts[0].toUpperCase();
-//
-//        switch (command) {
-//            case "AUTH":
-//                if (parts.length >= 2)
-//                    return "Livreur " + parts[1] + " authentifié.";
-//                else
-//                    return "Commande AUTH incorrecte. Usage : AUTH <nom>";
-//
-//            case "POS":
-//                if (parts.length >= 4)
-//                    return "Position du colis " + parts[1] + " reçue : lat=" + parts[2] + ", lon=" + parts[3];
-//                else
-//                    return "Commande POS incorrecte. Usage : POS <colis_id> <lat> <lon>";
-//
-//            case "TAKE":
-//                if (parts.length >= 2) {
-//                    colisPris.put(parts[1], true);
-//                    return "Colis " + parts[1] + " pris en charge.";
-//                } else
-//                    return "Commande TAKE incorrecte. Usage : TAKE <colis_id>";
-//
-//            case "STATE":
-//                if (parts.length >= 3) {
-//                    String statut = line.substring(line.indexOf(parts[2]));
-//                    colisEtat.put(parts[1], statut);
-//                    return "Colis " + parts[1] + " mis à jour : " + statut;
-//                } else
-//                    return "Commande STATE incorrecte. Usage : STATE <colis_id> <état>";
-//
-//            case "GET":
-//                if (parts.length >= 2) {
-//                    String etat = colisEtat.getOrDefault(parts[1], "inconnu");
-//                    return "Colis " + parts[1] + " état actuel : " + etat + ".";
-//                } else
-//                    return "Commande GET incorrecte. Usage : GET <colis_id>";
-//
-//            case "QUIT":
-//                return "Déconnexion demandée.";
-//
-//            default:
-//                return "Commande inconnue : " + command;
-//        }
-//    }
 }
