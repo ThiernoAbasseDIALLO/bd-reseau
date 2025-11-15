@@ -12,9 +12,9 @@ public class Colis {
             throw new SQLException("Tentative de requete en étant déconnecté de la base de donnée");
         }
 
-        String query = "SELECT 1 FROM colis WHERE colis_id = '" + colisId + "'";
-        try (Statement stmt = conn.createStatement();
-             ResultSet rs = stmt.executeQuery(query)){
+        String query = "SELECT 1 FROM colis WHERE colis_id =  ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query);
+             ResultSet rs = stmt.executeQuery()){
             return rs.next();
         }
     }

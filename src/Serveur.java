@@ -6,7 +6,6 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.ArrayList;
 
 public class Serveur {
     private String ip;
@@ -16,28 +15,13 @@ public class Serveur {
     private Livreur lv;
     private Position position;
 
-    private ArrayList<String[]> colisData = new ArrayList<>();
 
     public Serveur(String ip, int port) {
         this.ip = ip;
         this.port = port;
     }
 
-    private void loadCSV(String fileName, ArrayList<String[]> stockage) {
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            String line = br.readLine();
-            while ((line = br.readLine()) != null) {
-                if (line.trim().isEmpty()) continue;
-                stockage.add(line.split(",", -1));
-            }
-            System.out.println(fileName + " chargé avec " + stockage.size() + " lignes valides.");
-        } catch (IOException e) {
-            System.err.println("Erreur lecture CSV " + fileName + " : " + e.getMessage());
-        }
-    }
-
     public void startServer() {
-        loadCSV("src/colis.csv", colisData);
         DBConfig config = new DBConfig("config.properties");
         db = new DBConnect(config);
         Connection conn = db.connect();
