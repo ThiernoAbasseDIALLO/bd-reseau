@@ -14,6 +14,7 @@ public class Serveur {
     private int port;
     private Colis colis;
     private DBConnect db;
+    private Livreur lv;
 
     private ArrayList<String[]> colisData = new ArrayList<>();
     private ArrayList<String[]> livreursData = new ArrayList<>();
@@ -45,6 +46,7 @@ public class Serveur {
         db = new DBConnect(config);
         Connection conn = db.connect();
         colis = new Colis(conn);
+        lv = new Livreur(conn);
 
         try (ServerSocket serverSocket = new ServerSocket(port, 0, InetAddress.getByName(ip))) {
             System.out.println("Serveur TCP démarré sur " + ip + ":" + port);
@@ -111,9 +113,9 @@ public class Serveur {
 
                 if (cmd.equals("AUTH") && parts.length >= 2) {
                     livreur = parts[1];
-                    if (isValidLivreur(livreur)) {
+                    if (lv.isValidLivreur(livreur)) {
                         authenticated = true;
-                        response = "Livreur " + livreur + " authentifié.";
+                        response = "Livreur " + livreur + " "+ lv.getNameLivreur(livreur) + " authentifié.";
                     } else {
                         response = "Livreur inconnu : " + livreur;
                     }
@@ -164,13 +166,6 @@ public class Serveur {
         }
     }
 
-    private boolean isValidLivreur(String livreurId) {
-        for (String[] l : livreursData) {
-            if (l.length > 0 && l[0].equalsIgnoreCase(livreurId)) return true;
-        }
-        return false;
-    }
-
     private String processPos(String[] parts) {
         if (parts.length < 4)
             return "Commande POS incorrecte. Usage : POS <colisId> <lat> <lon>";
@@ -182,16 +177,15 @@ public class Serveur {
         // Mettre à jour la liste positionsData
         boolean found = false;
         for (String[] p : positionsData) {
-            if (p[4].equals(colisId)) { // index 4 = colis_id dans ton CSV positions
-                p[1] = lat;  // latitude
-                p[2] = lon;  // longitude
-                p[3] = java.time.LocalDateTime.now().toString(); // horodatage
+            if (p[4].equals(colisId)) {
+                p[1] = lat;
+                p[2] = lon;
+                p[3] = java.time.LocalDateTime.now().toString();
                 found = true;
                 break;
             }
         }
         if (!found) {
-            // Ajouter nouvelle position
             positionsData.add(new String[]{"PO" + (positionsData.size() + 1), lat, lon, java.time.LocalDateTime.now().toString(), colisId});
         }
 
