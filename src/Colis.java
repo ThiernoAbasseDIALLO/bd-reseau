@@ -50,4 +50,18 @@ public class Colis {
             }
         }
     }
+
+    public boolean updateEtatColis(String colisId, String etat) throws SQLException {
+        if (conn == null) {
+            throw new SQLException("Tentative de requete en étant déconnecté de la base de donnée");
+        }
+
+        String query = "UPDATE colis SET etat = ? WHERE colis_id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, etat);
+            stmt.setString(2, colisId);
+            int rowsAffected = stmt.executeUpdate();
+            return rowsAffected == 1;
+        }
+    }
 }

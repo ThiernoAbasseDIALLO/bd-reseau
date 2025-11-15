@@ -208,14 +208,14 @@ public class Serveur {
         if (!colis.isValidColis(colisId))
             return "Colis inconnu : " + colisId;
 
-        for (String[] c : colisData) {
-            if (c[0].equalsIgnoreCase(colisId)) {
-                c[4] = etat;
-                break;
-            }
+        boolean update = false;
+        update = colis.updateEtatColis(colisId, etat);
+
+        if (update) {
+            return "État du colis " + colisId + " mis à jour : " + etat;
         }
 
-        return "État du colis " + colisId + " mis à jour : " + etat;
+        return "Impossible de mettre à jour l'état du colis " + colisId;
     }
 
     private String processTake(String[] parts) throws SQLException {
