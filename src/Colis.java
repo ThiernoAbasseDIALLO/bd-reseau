@@ -1,4 +1,5 @@
 import java.sql.*;
+import java.util.UUID;
 
 public class Colis {
     private  Connection conn;
@@ -12,10 +13,12 @@ public class Colis {
             throw new SQLException("Tentative de requete en étant déconnecté de la base de donnée");
         }
 
-        String query = "SELECT 1 FROM colis WHERE colis_id =  ?";
-        try (PreparedStatement stmt = conn.prepareStatement(query);
-             ResultSet rs = stmt.executeQuery()){
-            return rs.next();
+        String query = "SELECT colis_id FROM colis WHERE colis_id =  ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, colisId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
         }
     }
 
@@ -94,7 +97,7 @@ public class Colis {
                 + "VALUES (?, ?, ?, ?)";
 
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            String notificationId = "NO" + System.currentTimeMillis();
+            String notificationId = "NO" + UUID.randomUUID().toString().substring(0, 9);;
 
             stmt.setString(1, notificationId);
             stmt.setString(2, typeNotification);
