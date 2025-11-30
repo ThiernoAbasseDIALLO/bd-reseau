@@ -22,7 +22,6 @@
             <input type="submit" value="Connexion"/>
             <span id="message"></span>
         </form>
-<!--        <span>Si vous n'avez pas de compte, <a href="inscription.php">cliquez ici pour s'inscrire</a></span>-->
     </main>
 
     <script>

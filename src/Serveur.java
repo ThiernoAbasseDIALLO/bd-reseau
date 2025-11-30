@@ -1,9 +1,5 @@
 import java.io.*;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.InetAddress;
-import java.net.SocketException;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.sql.Connection;
 import java.sql.SQLException;
 
@@ -14,6 +10,8 @@ public class Serveur {
     private DBConnect db;
     private Livreur lv;
     private Position position;
+    private final int MAX_CMD_LENGTH = 1024;
+    private final int SOCKET_TIMEOUT = 30000;
 
 
     public Serveur(String ip, int port) {
@@ -28,6 +26,13 @@ public class Serveur {
         colis = new Colis(conn);
         lv = new Livreur(conn);
 
+        System.out.println("\n--- Configuration du Serveur ---");
+        System.out.println("  IP d'écoute : " + this.ip);
+        System.out.println("  Port d'écoute : " + this.port);
+        System.out.println("  Longueur max. commande (Sécurité) : " + MAX_CMD_LENGTH + " caractères.");
+        System.out.println("  Timeout d'inactivité (Sécurité) : " + (SOCKET_TIMEOUT/1000) + " s.");
+        System.out.println("--------------------------------\n");
+
         try (ServerSocket serverSocket = new ServerSocket(port, 0, InetAddress.getByName(ip))) {
             System.out.println("Serveur TCP démarré sur " + ip + ":" + port);
 
@@ -38,6 +43,8 @@ public class Serveur {
                 new Thread(() -> handleClient(clientSocket)).start();
             }
 
+        } catch (BindException b){
+            System.err.println("ERREUR GRAVE : Le port " + port + " est déjà utilisé ou inaccessible. (" + b.getMessage() +")");
         } catch (IOException e) {
             System.err.println("Erreur lors du démarrage du serveur : " + e.getMessage());
         }finally {
@@ -74,11 +81,19 @@ public class Serveur {
                 BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                 BufferedWriter out = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()))
         ) {
-            clientSocket.setSoTimeout(30000);
-            printToClient("Bienvenue ! Veuillez vous authentifier (ex: AUTH <idLivreur>)", out);
+            clientSocket.setSoTimeout(SOCKET_TIMEOUT);
+//            printToClient("Bienvenue ! Veuillez vous authentifier (ex: AUTH <idLivreur>)", out);
 
             String line;
             while ((line = in.readLine()) != null) {
+
+                if (line.length() > MAX_CMD_LENGTH) {
+                    String errorMsg = "Erreur : Commande trop longue (" + line.length() + " > " + MAX_CMD_LENGTH + "). Déconnexion.";
+                    System.err.println("Client " + clientSocket.getInetAddress() + " : " + errorMsg);
+                    printToClient(errorMsg, out);
+                    return;
+                }
+
                 System.out.println("Message reçu du client : " + line);
                 String response = "";
 

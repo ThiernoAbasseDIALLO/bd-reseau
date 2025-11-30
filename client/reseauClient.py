@@ -1,46 +1,61 @@
 import socket
 
-# HOST = '127.0.0.1'
-HOST = '192.168.1.167'
+HOST = '127.0.0.1'
+# HOST = '192.168.1.167'
 PORT = 5000
+TIMEOUT_SECONDS = 30
+
 
 def main():
     try:
-        with socket.create_connection((HOST, PORT)) as sock:
+        with socket.create_connection((HOST, PORT), timeout=TIMEOUT_SECONDS) as sock:
             sock_file = sock.makefile("r", encoding="utf-8")
 
             print(f"Connecté au serveur {HOST} port {PORT}.")
             print("Tapez vos commandes, ou 'quit' pour quitter.\n")
 
             while True:
-                response = sock_file.readline().strip()
-                if not response:
-                    print("Serveur déconnecté.")
+                try:
+                    cmd = input("Client > ").strip()
+                except EOFError:
                     break
-                print(f"Réponse serveur : {response}")
 
-                cmd = input("> ").strip()
+                if not cmd:
+                    continue
+
+                try:
+                    sock.sendall((cmd + "\n").encode('utf-8'))
+                except socket.timeout:
+                    print("Erreur : Timeout lors de l'envoi.")
+                    break
+
                 if cmd.lower() == 'quit':
-                    print("Déconnexion du serveur.")
+                    try:
+                        response = sock_file.readline().strip()
+                        if response:
+                            print(f"Réponse serveur : {response}")
+                    except:
+                        pass
+                    print("Déconnexion.")
                     break
 
-                # Envoi de la commande
-                sock.sendall((cmd + "\n").encode('utf-8'))
+                try:
+                    response = sock_file.readline()
 
-                # Lecture d'une réponse complète (jusqu'à \n)
-                response = ""
-                while not response.endswith("\n"):
-                    data = sock.recv(1024)
-                    if not data:
-                        print("Serveur déconnecté.")
-                        return
-                    response += data.decode('utf-8', errors='replace')
+                    if not response:
+                        print("Le serveur a fermé la connexion.")
+                        break
 
-                # Envoi d'une commande
-                sock.sendall((cmd + "\n").encode('utf-8'))
+                    print(f"Réponse serveur : {response.strip()}")
+
+                except socket.timeout:
+                    print(f"Erreur : Pas de réponse après {TIMEOUT_SECONDS}s.")
+                    break
 
     except ConnectionRefusedError:
         print("Impossible de se connecter au serveur. Vérifiez qu'il est lancé.")
+    except socket.timeout:
+        print(f"Erreur : Délai d'attente dépassé lors de la tentative de connexion initiale après {TIMEOUT_SECONDS} secondes.")
     except Exception as e:
         print(f"Erreur : {e}")
 
