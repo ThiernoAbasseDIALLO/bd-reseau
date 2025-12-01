@@ -68,9 +68,24 @@ public class Colis {
         }
     }
 
+    private boolean colisExisteDansLivraison(String colisId) throws SQLException {
+        String query = "SELECT 1 FROM livraison WHERE colis_id = ?";
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            stmt.setString(1, colisId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        }
+    }
+
     public boolean takeColis(String colisId, String livreurId) throws SQLException {
         if (conn == null) {
             throw new SQLException("Tentative de requete en étant déconnecté de la base de donnée");
+        }
+
+        if (colisExisteDansLivraison(colisId)) {
+            System.out.println("Ce colis est déjà pris en charge !");
+            return false;
         }
 
         boolean updated = updateEtatColis(colisId, "pris en charge");
@@ -78,7 +93,7 @@ public class Colis {
             return false;
         }
 
-        String insertLivraison = "INSERT INTO livraison (colis_id, livreur_id, etat) VALUES (?, ?, 'prise en charge')";
+        String insertLivraison = "INSERT INTO livraison (colis_id, livreur_id, etat) VALUES (?, ?, 'en cours')";
         try (PreparedStatement stmt = conn.prepareStatement(insertLivraison)) {
             stmt.setString(1, colisId);
             stmt.setString(2, livreurId);
@@ -93,16 +108,14 @@ public class Colis {
             throw new SQLException("Tentative de requête sans connexion à la base de données");
         }
 
-        String query = "INSERT INTO notification (notification_id, type_notification, message, colis_id) "
-                + "VALUES (?, ?, ?, ?)";
+        String query = "INSERT INTO notification (type_notification, message, colis_id) "
+                + "VALUES (?, ?, ?)";
 
         try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            String notificationId = "NO" + UUID.randomUUID().toString().substring(0, 9);;
 
-            stmt.setString(1, notificationId);
-            stmt.setString(2, typeNotification);
-            stmt.setString(3, message);
-            stmt.setString(4, colisId);
+            stmt.setString(1, typeNotification);
+            stmt.setString(2, message);
+            stmt.setString(3, colisId);
 
             int rowsAffected = stmt.executeUpdate();
             return rowsAffected == 1;

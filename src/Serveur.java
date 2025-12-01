@@ -4,8 +4,13 @@ import java.sql.Connection;
 import java.sql.SQLException;
 
 public class Serveur {
+    private static final String DEFAULT_IP = "127.0.0.1";
+    private static final int DEFAULT_PORT = 5000;
+    private static final int DEFAULT_TIMEOUT = 30000;
+
     private String ip;
     private int port;
+    private int socketTimeout;
     private Colis colis;
     private DBConnect db;
     private Livreur lv;
@@ -14,9 +19,57 @@ public class Serveur {
     private final int SOCKET_TIMEOUT = 30000;
 
 
-    public Serveur(String ip, int port) {
-        this.ip = ip;
-        this.port = port;
+    public Serveur() {
+        this.ip = DEFAULT_IP;
+        this.port = DEFAULT_PORT;
+        this.socketTimeout = DEFAULT_TIMEOUT;
+    }
+
+    public void loadServerConfig(String path) {
+        System.out.println("Lecture de la configuration : " + path);
+        File configFile = new File(path);
+
+        if (!configFile.exists()) {
+            File fileInSrc = new File("src/" + path);
+            if (fileInSrc.exists()) {
+                System.out.println("Fichier non trouvé à la racine, mais trouvé dans 'src/'.");
+                configFile = fileInSrc;
+            }
+        }
+
+        if (!configFile.exists()) {
+            System.out.println("Fichier '" + path + "' introuvable. Utilisation des valeurs par défaut.");
+            return;
+        }
+
+        try (BufferedReader bufferedReader = new BufferedReader(new FileReader(configFile))) {
+            String line;
+            while ((line = bufferedReader.readLine()) != null) {
+                line = line.trim();
+
+                if (line.isEmpty() || line.startsWith("#")) {
+                    continue;
+                }
+
+                String lowerLine = line.toLowerCase();
+
+                try {
+                    if (lowerLine.startsWith("ip=")) {
+                        this.ip = line.substring(3).trim();
+
+                    } else if (lowerLine.startsWith("port=")) {
+                        this.port = Integer.parseInt(line.substring(5).trim());
+
+                    } else if (lowerLine.startsWith("timeout=")) {
+                        this.socketTimeout = Integer.parseInt(line.substring(8).trim());
+                    }
+                } catch (NumberFormatException e) {
+                    System.err.println("Erreur de format sur la ligne : " + line + " (Ignorée)");
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Erreur de lecture du fichier configuration : " + e.getMessage());
+        }
     }
 
     public void startServer() {
@@ -25,6 +78,7 @@ public class Serveur {
         Connection conn = db.connect();
         colis = new Colis(conn);
         lv = new Livreur(conn);
+        position = new Position(conn);
 
         System.out.println("\n--- Configuration du Serveur ---");
         System.out.println("  IP d'écoute : " + this.ip);

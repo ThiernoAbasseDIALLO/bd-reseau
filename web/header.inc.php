@@ -13,7 +13,7 @@
     <header class="navbar custom-header navbar-expand-lg">
             <figure class="mb-0 ml-2 d-flex align-items-center">
                 <a class="navbar-brand" href="index.php">
-                    <img src="<?= $logo; ?>" alt="Logo du site"/>
+                    <img src="logo.jpg" alt="Logo du site"/>
                     <span class="ms-2">Suivi de livraison</span>
                 </a>
             </figure>
@@ -26,12 +26,11 @@
             <div class="nav-mobile collapse navbar-collapse justify-content-between align-items-center" id="navbarResponsive">
                 <nav class="my-3 my-lg-0">
                     <ul class="navbar-nav flex-row flex-lg-row gap-3">
-                        <li>
-                            <a class="nav-link" href="#">A propos</a>
-                        </li>
-                        <li>
-                            <a class="nav-link" href="#">Contacts</a>
-                        </li>
+                        <?php if (isset($_SESSION['login'])): ?>
+                            <li>
+                                <a class="nav-link" href="consultation.php">Suivi du colis</a>
+                            </li>
+                        <?php endif; ?>
                     </ul>
                 </nav>
 

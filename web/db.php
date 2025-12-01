@@ -7,7 +7,7 @@ class db
         try {
             $config = require $configFile;
 
-            $dsn = sprintf("psql:host=%s;port=%d;dbname=%s",
+            $dsn = sprintf("pgsql:host=%s;port=%d;dbname=%s",
                 $config['host'], $config['port'], $config['dbname']
             );
 
@@ -19,6 +19,10 @@ class db
         }catch (PDOException $e){
             die("Erreur de connexion a la BDD : " . $e->getMessage());
         }
+    }
+
+    public function getPDO() {
+        return $this->pdo;
     }
 
     public function query(String $sql, array $params=[]):PDOStatement|bool{
